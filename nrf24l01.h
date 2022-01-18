@@ -176,7 +176,14 @@ public:
     uint8_t data_len();
     uint8_t get_data(uint8_t *data);
 
+    uint8_t spi_write_reg(uint8_t addr, uint8_t data);
+    uint8_t spi_read_reg(uint8_t addr, uint8_t *data);
+    uint8_t spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+    uint8_t spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+
     /* for transceiver setting */
+    /* Tx or Rx */
+    ModeType txrx_mode;
     /* Channel 0 - 127 */
     uint8_t channel;
     /* Dynamic Payload Lengt or Fixed Length */
@@ -193,10 +200,5 @@ private:
     uint8_t csn_pin_;
     /* SPI obj */
     SPIClass *spi;
-
-    uint8_t spi_write_reg(uint8_t addr, uint8_t data);
-    uint8_t spi_read_reg(uint8_t addr, uint8_t *data);
-    uint8_t spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
-    uint8_t spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
 };
 #endif /* _NRF24L01_H_ */

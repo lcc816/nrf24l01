@@ -13,6 +13,7 @@ Nrf24l01::Nrf24l01(uint8_t ce_pin, uint8_t csn_pin, SPIClass *spi_obj)
     ce_pin_ = ce_pin;
     csn_pin_ = csn_pin;
     spi = spi_obj;
+    txrx_mode = MODE_TX;
     channel = 1;
     length_mode = LENGTH_DYN;
     payload_len = 16;
@@ -45,7 +46,14 @@ void Nrf24l01::config()
         spi_write_reg(RX_PW_P0, payload_len);
         spi_write_reg(RX_PW_P1, payload_len);
     }
-    spi_write_reg(CONFIG, EN_CRC | PWR_UP);
+    if (txrx_mode == MODE_RX)
+    {
+        spi_write_reg(CONFIG, EN_CRC | PWR_UP | PRIM_RX);
+    }
+    else
+    {
+        spi_write_reg(CONFIG, EN_CRC | PWR_UP);
+    }
     spi_write_reg(EN_AA, ENAA_P0);
     spi_write_reg(EN_RXADDR, ERX_P0);
     spi_write_reg(SETUP_AW, AW_5BYTES);
