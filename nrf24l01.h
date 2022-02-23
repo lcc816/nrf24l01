@@ -13,107 +13,107 @@
 #include <SPI.h>
 
 /* Memory Map */
-#define CONFIG      0x00
-#define EN_AA       0x01
-#define EN_RXADDR   0x02
-#define SETUP_AW    0x03
-#define SETUP_RETR  0x04
-#define RF_CH       0x05
-#define RF_SETUP    0x06
-#define STATUS      0x07
-#define OBSERVE_TX  0x08
-#define RPD         0x09
-#define RX_ADDR_P0  0x0A
-#define RX_ADDR_P1  0x0B
-#define RX_ADDR_P2  0x0C
-#define RX_ADDR_P3  0x0D
-#define RX_ADDR_P4  0x0E
-#define RX_ADDR_P5  0x0F
-#define TX_ADDR     0x10
-#define RX_PW_P0    0x11
-#define RX_PW_P1    0x12
-#define RX_PW_P2    0x13
-#define RX_PW_P3    0x14
-#define RX_PW_P4    0x15
-#define RX_PW_P5    0x16
-#define FIFO_STATUS 0x17
-#define DYNPD       0x1C
-#define FEATRUE     0x1D
+#define REG_CONFIG      0x00
+#define REG_EN_AA       0x01
+#define REG_EN_RXADDR   0x02
+#define REG_SETUP_AW    0x03
+#define REG_SETUP_RETR  0x04
+#define REG_RF_CH       0x05
+#define REG_RF_SETUP    0x06
+#define REG_STATUS      0x07
+#define REG_OBSERVE_TX  0x08
+#define REG_RPD         0x09
+#define REG_RX_ADDR_P0  0x0A
+#define REG_RX_ADDR_P1  0x0B
+#define REG_RX_ADDR_P2  0x0C
+#define REG_RX_ADDR_P3  0x0D
+#define REG_RX_ADDR_P4  0x0E
+#define REG_RX_ADDR_P5  0x0F
+#define REG_TX_ADDR     0x10
+#define REG_RX_PW_P0    0x11
+#define REG_RX_PW_P1    0x12
+#define REG_RX_PW_P2    0x13
+#define REG_RX_PW_P3    0x14
+#define REG_RX_PW_P4    0x15
+#define REG_RX_PW_P5    0x16
+#define REG_FIFO_STATUS 0x17
+#define REG_DYNPD       0x1C
+#define REG_FEATRUE     0x1D
 
 /* Bit Mnemonics */
-/* CONFIG */
-#define MASK_RX_DR  ((uint8_t)0x40)
-#define MASK_TX_DS  ((uint8_t)0x20)
-#define MASK_MAX_RT ((uint8_t)0x10)
-#define EN_CRC      ((uint8_t)0x08)
-#define CRCO        ((uint8_t)0x04)
-#define PWR_UP      ((uint8_t)0x02)
-#define PRIM_RX     ((uint8_t)0x01)
-/* EN_AA */
-#define ENAA_P5     ((uint8_t)0x20)
-#define ENAA_P4     ((uint8_t)0x10)
-#define ENAA_P3     ((uint8_t)0x08)
-#define ENAA_P2     ((uint8_t)0x04)
-#define ENAA_P1     ((uint8_t)0x02)
-#define ENAA_P0     ((uint8_t)0x01)
-/* EN_RXADDR */
-#define ERX_P5      ((uint8_t)0x20)
-#define ERX_P4      ((uint8_t)0x10)
-#define ERX_P3      ((uint8_t)0x08)
-#define ERX_P2      ((uint8_t)0x04)
-#define ERX_P1      ((uint8_t)0x02)
-#define ERX_P0      ((uint8_t)0x01)
-/* SETUP_AW */
-#define AW          ((uint8_t)0x03)
-#define AW_RERSERVED    ((uint8_t)0x0)
+/* 00 - CONFIG */
+#define MASK_RX_DR      ((uint8_t)0x40)
+#define MASK_TX_DS      ((uint8_t)0x20)
+#define MASK_MAX_RT     ((uint8_t)0x10)
+#define MASK_EN_CRC     ((uint8_t)0x08)
+#define MASK_CRCO       ((uint8_t)0x04)
+#define MASK_PWR_UP     ((uint8_t)0x02)
+#define MASK_PRIM_RX    ((uint8_t)0x01)
+/* 01 - EN_AA */
+#define MASK_ENAA_P5    ((uint8_t)0x20)
+#define MASK_ENAA_P4    ((uint8_t)0x10)
+#define MASK_ENAA_P3    ((uint8_t)0x08)
+#define MASK_ENAA_P2    ((uint8_t)0x04)
+#define MASK_ENAA_P1    ((uint8_t)0x02)
+#define MASK_ENAA_P0    ((uint8_t)0x01)
+/* 02 - EN_RXADDR */
+#define MASK_ERX_P5     ((uint8_t)0x20)
+#define MASK_ERX_P4     ((uint8_t)0x10)
+#define MASK_ERX_P3     ((uint8_t)0x08)
+#define MASK_ERX_P2     ((uint8_t)0x04)
+#define MASK_ERX_P1     ((uint8_t)0x02)
+#define MASK_ERX_P0     ((uint8_t)0x01)
+/* 03 - SETUP_AW */
+#define MASK_AW         ((uint8_t)0x03)
+#define AW_ILLEGAL      ((uint8_t)0x0)
 #define AW_3BYTES       ((uint8_t)0x1)
 #define AW_4BYTES       ((uint8_t)0x2)
 #define AW_5BYTES       ((uint8_t)0x3)
-/* SETUP_RETR */
-#define ARD         ((uint8_t)0xF0)
-#define ARD_250US   ((uint8_t)0x00)
-#define ARD_500US   ((uint8_t)0x10)
-#define ARD_750US   ((uint8_t)0x20)
-#define ARD_1000US  ((uint8_t)0x30)
-#define ARD_2000US  ((uint8_t)0x70)
-#define ARD_4000US  ((uint8_t)0xF0)
-#define ARC         ((uint8_t)0x0F)
-/* RF_CH */
-#define MASK_RF_CH  ((uint8_t)0x7F)
-/* RF_SETUP */
-#define CONT_WAVE   ((uint8_t)0x80)
-#define RF_DR_LOW   ((uint8_t)0x20)
-#define PLL_LOCK    ((uint8_t)0x10)
-#define RF_DR_HIGH  ((uint8_t)0x08)
-#define RF_PWR      ((uint8_t)0x06)
-/* STATUS */
-#define RX_DR       ((uint8_t)0x40)
-#define TX_DS       ((uint8_t)0x20)
-#define MAX_RT      ((uint8_t)0x10)
-#define RX_P_NO     ((uint8_t)0x0E)
-#define TX_FULL     ((uint8_t)0x01)
-/* OBSERVE_TX */
-#define PLOS_CNT    ((uint8_t)0xF0)
-#define ARC_CNT     ((uint8_t)0x0F)
-/* RPD */
-#define MASK_RPD    ((uint8_t)0x01)
-/* FIFO_STATUS */
-#define TX_REUSE    ((uint8_t)0x40)
-#define FIFO_FULL   ((uint8_t)0x20)
-#define TX_EMPTY    ((uint8_t)0x10)
-#define RX_FULL     ((uint8_t)0x02)
-#define RX_EMPTY    ((uint8_t)0x01)
-/* DYNPD */
-#define DPL_P5      ((uint8_t)0x20)
-#define DPL_P4      ((uint8_t)0x10)
-#define DPL_P3      ((uint8_t)0x08)
-#define DPL_P2      ((uint8_t)0x04)
-#define DPL_P1      ((uint8_t)0x02)
-#define DPL_P0      ((uint8_t)0x01)
-/* FEATURE */
-#define EN_DPL      ((uint8_t)0x04)
-#define EN_ACK_PAY  ((uint8_t)0x02)
-#define EN_DYN_ACK  ((uint8_t)0x01)
+/* 04 - SETUP_RETR */
+#define MASK_ARD        ((uint8_t)0xF0)
+#define ARD_250US       ((uint8_t)0x00)
+#define ARD_500US       ((uint8_t)0x10)
+#define ARD_750US       ((uint8_t)0x20)
+#define ARD_1000US      ((uint8_t)0x30)
+#define ARD_2000US      ((uint8_t)0x70)
+#define ARD_4000US      ((uint8_t)0xF0)
+#define MASK_ARC        ((uint8_t)0x0F)
+/* 05 - RF_CH */
+#define MASK_RF_CH      ((uint8_t)0x7F)
+/* 06 - RF_SETUP */
+#define MASK_CONT_WAVE  ((uint8_t)0x80)
+#define MASK_RF_DR_LOW  ((uint8_t)0x20)
+#define MASK_PLL_LOCK   ((uint8_t)0x10)
+#define MASK_RF_DR_HIGH ((uint8_t)0x08)
+#define MASK_RF_PWR     ((uint8_t)0x06)
+/* 07 - STATUS */
+#define MASK_RX_DR      ((uint8_t)0x40)
+#define MASK_TX_DS      ((uint8_t)0x20)
+#define MASK_MAX_RT     ((uint8_t)0x10)
+#define MASK_RX_P_NO    ((uint8_t)0x0E)
+#define MASK_TX_FULL    ((uint8_t)0x01)
+/* 08 - OBSERVE_TX */
+#define MASK_PLOS_CNT   ((uint8_t)0xF0)
+#define MASK_ARC_CNT    ((uint8_t)0x0F)
+/* 09 - RPD */
+#define MASK_RPD        ((uint8_t)0x01)
+/* 17 - FIFO_STATUS */
+#define MASK_TX_REUSE   ((uint8_t)0x40)
+#define MASK_FIFO_FULL  ((uint8_t)0x20)
+#define MASK_TX_EMPTY   ((uint8_t)0x10)
+#define MASK_RX_FULL    ((uint8_t)0x02)
+#define MASK_RX_EMPTY   ((uint8_t)0x01)
+/* 1C - DYNPD */
+#define MASK_DPL_P5     ((uint8_t)0x20)
+#define MASK_DPL_P4     ((uint8_t)0x10)
+#define MASK_DPL_P3     ((uint8_t)0x08)
+#define MASK_DPL_P2     ((uint8_t)0x04)
+#define MASK_DPL_P1     ((uint8_t)0x02)
+#define MASK_DPL_P0     ((uint8_t)0x01)
+/* 1D - FEATURE */
+#define MASK_EN_DPL     ((uint8_t)0x04)
+#define MASK_EN_ACK_PAY ((uint8_t)0x02)
+#define MASK_EN_DYN_ACK ((uint8_t)0x01)
 
 /* Instruction Mnemonics */
 #define R_REGISTER    0x00

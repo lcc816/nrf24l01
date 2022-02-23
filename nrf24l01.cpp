@@ -36,33 +36,33 @@ void Nrf24l01::config()
     if (length_mode == LENGTH_DYN)
     {
         // Enable dynamic payload length data pipe 0
-        spi_write_reg(DYNPD, DPL_P0);
+        spi_write_reg(REG_DYNPD, MASK_DPL_P0);
         // Enables Dynamic Payload Length, Payload with ACK,
         // and the W_TX_PAYLOAD_NOACK command
-        spi_write_reg(FEATRUE, EN_DPL | EN_ACK_PAY | EN_DYN_ACK);
+        spi_write_reg(REG_FEATRUE, MASK_EN_DPL | MASK_EN_ACK_PAY | MASK_EN_DYN_ACK);
     }
     else
     {
-        spi_write_reg(RX_PW_P0, payload_len);
-        spi_write_reg(RX_PW_P1, payload_len);
+        spi_write_reg(REG_RX_PW_P0, payload_len);
+        spi_write_reg(REG_RX_PW_P1, payload_len);
     }
     if (txrx_mode == MODE_RX)
     {
-        spi_write_reg(CONFIG, EN_CRC | PWR_UP | PRIM_RX);
+        spi_write_reg(REG_CONFIG, MASK_EN_CRC | MASK_PWR_UP | MASK_PRIM_RX);
     }
     else
     {
-        spi_write_reg(CONFIG, EN_CRC | PWR_UP);
+        spi_write_reg(REG_CONFIG, MASK_EN_CRC | MASK_PWR_UP);
     }
-    spi_write_reg(EN_AA, ENAA_P0);
-    spi_write_reg(EN_RXADDR, ERX_P0);
-    spi_write_reg(SETUP_AW, AW_5BYTES);
-    spi_write_reg(SETUP_RETR, ARD_4000US |
-                  (repeat_cnt & 0x0F));
-    spi_write_reg(RF_CH, channel);
+    spi_write_reg(REG_EN_AA, MASK_ENAA_P0);
+    spi_write_reg(REG_EN_RXADDR, MASK_ERX_P0);
+    spi_write_reg(REG_SETUP_AW, AW_5BYTES);
+    spi_write_reg(REG_SETUP_RETR, ARD_4000US |
+                  (repeat_cnt & MASK_ARC));
+    spi_write_reg(REG_RF_CH, channel);
     // Set RF Data Rate to 250kbps
     // Set RF output power to 0dBm
-    spi_write_reg(RF_SETUP, RF_DR_LOW | RF_PWR);
+    spi_write_reg(REG_RF_SETUP, MASK_RF_DR_LOW | MASK_RF_PWR);
 }
 
 // Only RX_ADDR_P0 and RX_ADDR_P1 have a width of 5 bytes
@@ -73,17 +73,17 @@ void Nrf24l01::set_rx_addr(uint8_t pipe, uint8_t *addr, uint8_t len)
     len = (len > 5) ? 5 : len;
     pipe = (pipe > 5) ? 5 : pipe;
 
-    spi_write_buffer(RX_ADDR_P0 + pipe, addr, 5);
+    spi_write_buffer(REG_RX_ADDR_P0 + pipe, addr, 5);
 }
 
 void Nrf24l01::set_tx_addr(uint8_t *addr, uint8_t len)
 {
     len = (len > 5) ? 5 : len;
-    spi_write_buffer(TX_ADDR, addr, len);
+    spi_write_buffer(REG_TX_ADDR, addr, len);
     /*
      * RX_ADDR_P0 must be set to the sending addr for auto ack to work.
      */
-    spi_write_buffer(RX_ADDR_P0, addr, len);
+    spi_write_buffer(REG_RX_ADDR_P0, addr, len);
 }
 
 bool Nrf24l01::is_available()
@@ -91,8 +91,8 @@ bool Nrf24l01::is_available()
     uint8_t i;
     uint8_t tx_addr[5] = {'A', 'B', 'C', 'D', 'E'};
     uint8_t read_buf[5] = {0};
-    spi_write_buffer(TX_ADDR, tx_addr, 5);
-    spi_read_buffer(TX_ADDR, read_buf, 5);
+    spi_write_buffer(REG_TX_ADDR, tx_addr, 5);
+    spi_read_buffer(REG_TX_ADDR, read_buf, 5);
 
     for (i = 0; i < 5; i++)
     {
@@ -205,21 +205,21 @@ uint8_t Nrf24l01::spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes)
 void Nrf24l01::set_txrx_mode(ModeType mode)
 {
     uint8_t control_reg = 0;
-    spi_read_reg(CONFIG, &control_reg);
+    spi_read_reg(REG_CONFIG, &control_reg);
     if (mode == MODE_TX)
     {
-        control_reg |= (1 << PRIM_RX);
+        control_reg |= MASK_PRIM_RX;
     }
     else
     {
-        control_reg &= ~(1 << PRIM_RX);
+        control_reg &= ~MASK_PRIM_RX;
     }
-    spi_write_reg(CONFIG, control_reg);
+    spi_write_reg(REG_CONFIG, control_reg);
 }
 
 void Nrf24l01::set_channel(uint8_t ch)
 {
-    spi_write_reg(RF_CH, ch);
+    spi_write_reg(REG_RF_CH, ch);
 }
 
 uint8_t Nrf24l01::tx_packet(uint8_t *tx_buf, uint8_t len)
@@ -249,13 +249,13 @@ uint8_t Nrf24l01::tx_packet(uint8_t *tx_buf, uint8_t len)
     timeout = 3;
     do
     {
-        spi_read_reg(STATUS, &status);
-        if (status & MAX_RT)
+        spi_read_reg(REG_STATUS, &status);
+        if (status & MASK_MAX_RT)
         {
             flush_tx();
             return STATUS_MAX_RT;
         }
-        if (status & TX_DS)
+        if (status & MASK_TX_DS)
         {
             return STATUS_OK;
         }
@@ -270,11 +270,11 @@ bool Nrf24l01::is_data_ready()
 {
     uint8_t value;
 
-    spi_read_reg(STATUS, &value);
-    if (value & RX_DR)
+    spi_read_reg(REG_STATUS, &value);
+    if (value & MASK_RX_DR)
         return true;
-    spi_read_reg(FIFO_STATUS, &value);
-    if (value & RX_EMPTY)
+    spi_read_reg(REG_FIFO_STATUS, &value);
+    if (value & MASK_RX_EMPTY)
         return false;
     return true;
 }
@@ -308,6 +308,6 @@ uint8_t Nrf24l01::get_data(uint8_t *data)
 
 ret:
     // Clear RX_DR flag
-    spi_write_reg(STATUS, RX_DR);
+    spi_write_reg(REG_STATUS, MASK_RX_DR);
     return len;
 }
