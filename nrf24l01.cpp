@@ -206,7 +206,7 @@ void Nrf24l01::set_txrx_mode(ModeType mode)
 {
     uint8_t control_reg = 0;
     spi_read_reg(REG_CONFIG, &control_reg);
-    if (mode == MODE_TX)
+    if (mode == MODE_RX)
     {
         control_reg |= MASK_PRIM_RX;
     }
