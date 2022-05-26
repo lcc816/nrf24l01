@@ -18,8 +18,8 @@ void setup()
         Serial.print("Device not available!\n");
     }
     MyNrf.set_rx_addr(1, nrf_addr, sizeof(nrf_addr));
-    MyNrf.length_mode = Nrf24l01::LENGTH_DYN;
-    MyNrf.txrx_mode = Nrf24l01::MODE_RX;
+    MyNrf.length_mode = RF24_LENGTH_DYN;
+    MyNrf.txrx_mode = RF24_MODE_RX;
     MyNrf.channel = 40;
     MyNrf.config();
 

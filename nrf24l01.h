@@ -75,6 +75,7 @@
 #define ARD_500US       ((uint8_t)0x10)
 #define ARD_750US       ((uint8_t)0x20)
 #define ARD_1000US      ((uint8_t)0x30)
+#define ARD_1500US      ((uint8_t)0x50)
 #define ARD_2000US      ((uint8_t)0x70)
 #define ARD_4000US      ((uint8_t)0xF0)
 #define MASK_ARC        ((uint8_t)0x0F)
@@ -86,6 +87,7 @@
 #define MASK_PLL_LOCK   ((uint8_t)0x10)
 #define MASK_RF_DR_HIGH ((uint8_t)0x08)
 #define MASK_RF_PWR     ((uint8_t)0x06)
+#define MASK_RF_OBS     ((uint8_t)0x01)
 /* 07 - STATUS */
 #define MASK_RX_DR      ((uint8_t)0x40)
 #define MASK_TX_DS      ((uint8_t)0x20)
@@ -135,22 +137,38 @@
 #define STATUS_MAX_RT   -2
 #define STATUS_TIMEOUT  -3
 
+typedef enum
+{
+    RF24_MODE_TX = 0,
+    RF24_MODE_RX
+} rf24_mode_e;
+
+typedef enum
+{
+    RF24_LENGTH_DYN = 0,
+    RF24_LENGTH_FIX
+} rf24_length_e;
+
+typedef enum {
+    /** (0) represents 1 Mbps */
+    RF24_1MBPS = 0,
+    /** (1) represents 2 Mbps */
+    RF24_2MBPS,
+    /** (2) represents 250 kbps */
+    RF24_250KBPS
+} rf24_datarate_e;
+
+typedef enum {
+    RF24_PWR_LVL0 = 0,
+    RF24_PWR_LVL1,
+    RF24_PWR_LVL2,
+    RF24_PWR_LVL3,
+    RF24_PWR_MAX = RF24_PWR_LVL3
+} rf24_power_e;
+
 class Nrf24l01
 {
 public:
-
-    typedef enum
-    {
-        MODE_TX = 0,
-        MODE_RX
-    } ModeType;
-
-    typedef enum
-    {
-        LENGTH_DYN = 0,
-        LENGTH_FIX
-    } LengthMode;
-
     Nrf24l01(uint8_t ce_pin = 8, uint8_t csn_pin = 7,
              SPIClass *spi_obj = &SPI);
 
@@ -164,41 +182,62 @@ public:
     void csn_low();
     void csn_high();
 
-    void set_txrx_mode(ModeType mode);
+    void set_txrx_mode(rf24_mode_e mode);
     void set_channel(uint8_t ch);
+    uint8_t get_channel();
     void set_tx_addr(uint8_t *addr, uint8_t len);
     void set_rx_addr(uint8_t pipe, uint8_t *addr, uint8_t len);
+    void set_payload_size(uint8_t size);
     uint8_t flush_tx();
     uint8_t flush_rx();
 
-    uint8_t tx_packet(uint8_t *tx_buf, uint8_t len);
+    void set_data_rate(rf24_datarate_e data_rate);
+    /* Compatible with Si24R1, whose RF_PWR field has 3 bits */
+    void set_power(rf24_power_e level, bool extension = true);
+
+    int8_t tx_packet(uint8_t *tx_buf, uint8_t len);
     bool is_data_ready();
     uint8_t data_len();
     uint8_t get_data(uint8_t *data);
 
-    uint8_t spi_write_reg(uint8_t addr, uint8_t data);
-    uint8_t spi_read_reg(uint8_t addr, uint8_t *data);
-    uint8_t spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
-    uint8_t spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+    void power_down();
+    void power_up();
+
+    // for debug
+    void dump_reg();
 
     /* for transceiver setting */
     /* Tx or Rx */
-    ModeType txrx_mode;
+    rf24_mode_e txrx_mode;
     /* Channel 0 - 127 */
     uint8_t channel;
     /* Dynamic Payload Lengt or Fixed Length */
-    LengthMode length_mode;
+    rf24_length_e length_mode;
     /* The length of the payload can be from 0 to 32 bytes */
     uint8_t payload_len;
     /* Auto Retransmit Count */
     uint8_t repeat_cnt;
+    /* Data Rate */
+    rf24_datarate_e data_rate;
+    /* RF Power */
+    rf24_power_e power_level;
 
 private:
     /* CE Pin */
-    uint8_t ce_pin_;
+    uint8_t _ce_pin;
     /* CSN */
-    uint8_t csn_pin_;
+    uint8_t _csn_pin;
     /* SPI obj */
     SPIClass *spi;
+    /* STATUS is shifted serially out on the MISO pin */
+    uint8_t _status;
+
+    void spi_write_reg(uint8_t addr, uint8_t data);
+    uint8_t spi_read_reg(uint8_t addr);
+    void spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+    void spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+    uint8_t _parse_data_rate_reg(rf24_datarate_e data_rate);
+    uint8_t _parse_power_reg(rf24_power_e level, bool extension);
+    void _clear_status_flags();
 };
 #endif /* _NRF24L01_H_ */
