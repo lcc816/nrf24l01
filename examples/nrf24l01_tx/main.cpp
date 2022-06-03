@@ -25,7 +25,7 @@ void setup()
     }
 
     // user settings
-    MyNrf.length_mode = RF24_LENGTH_FIX;
+    MyNrf.dynamic_length = false;
     MyNrf.payload_len = sizeof(payload);
     MyNrf.data_rate = RF24_1MBPS;
     MyNrf.repeat_cnt = 15;

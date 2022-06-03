@@ -143,12 +143,6 @@ typedef enum
     RF24_MODE_RX
 } rf24_mode_e;
 
-typedef enum
-{
-    RF24_LENGTH_DYN = 0,
-    RF24_LENGTH_FIX
-} rf24_length_e;
-
 typedef enum {
     /** (0) represents 1 Mbps */
     RF24_1MBPS = 0,
@@ -212,7 +206,7 @@ public:
     /* Channel 0 - 127 */
     uint8_t channel;
     /* Dynamic Payload Lengt or Fixed Length */
-    rf24_length_e length_mode;
+    bool dynamic_length;
     /* The length of the payload can be from 0 to 32 bytes */
     uint8_t payload_len;
     /* Auto Retransmit Count */

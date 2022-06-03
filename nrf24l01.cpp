@@ -15,7 +15,7 @@ Nrf24l01::Nrf24l01(uint8_t ce_pin, uint8_t csn_pin, SPIClass *spi_obj)
     spi = spi_obj;
     txrx_mode = RF24_MODE_RX;
     channel = 1;
-    length_mode = RF24_LENGTH_DYN;
+    dynamic_length = false;
     payload_len = 32;
     repeat_cnt = 10;
     data_rate = RF24_1MBPS;
@@ -29,14 +29,14 @@ void Nrf24l01::init()
 
     ce_low();
     csn_high();
-    spi->beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
+    //spi->beginTransaction(SPISettings(14000000, MSBFIRST, SPI_MODE0));
     spi->begin();
 }
 
 void Nrf24l01::config()
 {
     delay(5);
-    if (length_mode == RF24_LENGTH_DYN)
+    if (dynamic_length)
     {
         // Enable dynamic payload length data pipe 0
         spi_write_reg(REG_DYNPD, MASK_DPL_P0);
@@ -331,11 +331,12 @@ int8_t Nrf24l01::tx_packet(uint8_t *tx_buf, uint8_t len)
 
     uint8_t padding_len = 0;
 
-    len = min(32, len);
-    if (length_mode == RF24_LENGTH_FIX)
+    if (len > 32)
+        len = 32;
+    if (!dynamic_length)
     {
         if (len > payload_len)
-            return STATUS_FAIL;
+            len = payload_len;
         padding_len = payload_len - len;
     }
 
@@ -397,31 +398,31 @@ bool Nrf24l01::is_data_ready()
 
 uint8_t Nrf24l01::data_len()
 {
-    uint8_t len;
-    csn_low();
-    len = spi->transfer(R_RX_PL_WID);
-    csn_high();
-    return len;
+    if (dynamic_length)
+    {
+        uint8_t len;
+        csn_low();
+        spi->transfer(R_RX_PL_WID);
+        len = spi->transfer(0xFF);
+        csn_high();
+        return len;
+    }
+    else
+    {
+        return payload_len;
+    }
 }
 
 // read data from the RX FIFO
 uint8_t Nrf24l01::get_data(uint8_t *data)
 {
-    uint8_t len;
-    if (length_mode == RF24_LENGTH_FIX)
+    uint8_t len = data_len();
+    // Flush RX FIFO if the read value is larger than 32 bytes
+    if (len > 32)
     {
-        len = min(32, payload_len);
-    }
-    else
-    {
-        len = data_len();
-        // Flush RX FIFO if the read value is larger than 32 bytes
-        if (len > 32)
-        {
-            len = 0;
-            flush_rx();
-            goto ret;
-        }
+        len = 0;
+        flush_rx();
+        goto ret;
     }
 
     csn_low();
