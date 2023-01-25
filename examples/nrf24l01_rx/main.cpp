@@ -10,6 +10,7 @@ uint8_t rx_len = 0;
 void setup()
 {
     Serial.begin(115200);
+    while (!Serial); // wait to connect serial
     Serial.print("Hello rx demo!\n");
 
     MyNrf.init();
@@ -22,7 +23,6 @@ void setup()
     MyNrf.txrx_mode = RF24_MODE_RX;
     MyNrf.channel = 40;
     MyNrf.config();
-
 }
 
 void loop()

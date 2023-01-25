@@ -17,6 +17,7 @@ Nrf24l01::Nrf24l01(uint8_t ce_pin, uint8_t csn_pin, SPIClass *spi_obj)
     channel = 1;
     dynamic_length = false;
     payload_len = 32;
+    retry_delay = 1500;
     repeat_cnt = 10;
     data_rate = RF24_1MBPS;
     power_level = RF24_PWR_MAX;
@@ -39,10 +40,9 @@ void Nrf24l01::config()
     if (dynamic_length)
     {
         // Enable dynamic payload length data pipe 0
-        spi_write_reg(REG_DYNPD, MASK_DPL_P0);
-        // Enables Dynamic Payload Length, Payload with ACK,
-        // and the W_TX_PAYLOAD_NOACK command
-        spi_write_reg(REG_FEATRUE, MASK_EN_DPL | MASK_EN_ACK_PAY | MASK_EN_DYN_ACK);
+        spi_write_reg(REG_DYNPD, MASK_DPL_P1|MASK_DPL_P0);
+        // Enables Dynamic Payload Length
+        spi_write_reg(REG_FEATRUE, MASK_EN_DPL);
     }
     else
     {
@@ -60,8 +60,7 @@ void Nrf24l01::config()
     // Only enable RX pipe 0 & 1
     spi_write_reg(REG_EN_RXADDR, MASK_ERX_P0 | MASK_ERX_P1);
     spi_write_reg(REG_SETUP_AW, AW_5BYTES);
-    spi_write_reg(REG_SETUP_RETR, ARD_1500US |
-                  (repeat_cnt & MASK_ARC));
+    set_retries(retry_delay, repeat_cnt);
     spi_write_reg(REG_RF_CH, channel);
 
     // RF setup
@@ -82,7 +81,7 @@ void Nrf24l01::config()
 // Only RX_ADDR_P0 and RX_ADDR_P1 have a width of 5 bytes
 // RX_ADDR_P2~5 only have LSB
 // and the MSBytes of RX_ADDR_P2~5 are equal to RX_ADDR_P1[39:8]
-void Nrf24l01::set_rx_addr(uint8_t pipe, uint8_t *addr, uint8_t len)
+void Nrf24l01::set_rx_addr(uint8_t pipe, const uint8_t *addr, uint8_t len)
 {
     uint8_t value;
     len = (len > 5) ? 5 : len;
@@ -94,7 +93,7 @@ void Nrf24l01::set_rx_addr(uint8_t pipe, uint8_t *addr, uint8_t len)
     spi_write_reg(REG_EN_RXADDR, value | (1 << pipe));
 }
 
-void Nrf24l01::set_tx_addr(uint8_t *addr, uint8_t len)
+void Nrf24l01::set_tx_addr(const uint8_t *addr, uint8_t len)
 {
     len = (len > 5) ? 5 : len;
     spi_write_buffer(REG_TX_ADDR, addr, len);
@@ -204,7 +203,7 @@ uint8_t Nrf24l01::spi_read_reg(uint8_t addr)
     return ret;
 }
 
-void Nrf24l01::spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes)
+void Nrf24l01::spi_write_buffer(uint8_t addr, const uint8_t *buffer, uint8_t bytes)
 {
     csn_low();
     _status = spi->transfer(W_REGISTER | addr);
@@ -306,6 +305,26 @@ uint8_t Nrf24l01::get_channel()
     return spi_read_reg(REG_RF_CH);
 }
 
+void Nrf24l01::set_retries(uint16_t delay, uint8_t count)
+{
+    uint8_t ard;
+    /*
+     * '0000' - 250uS
+     * '0001' - 500uS
+     * '0010' - 750uS
+     * ...
+     * '1111' – 40000uS
+     **/
+    if (delay < 250)
+        delay = 250;
+    if (delay > 4000)
+        delay = 4000;
+    ard = delay / 250;
+    if (count > 15)
+        count = 15;
+    spi_write_reg(REG_SETUP_RETR, (ard << 4) | count);
+}
+
 void Nrf24l01::power_down()
 {
     ce_low();
@@ -363,22 +382,23 @@ int8_t Nrf24l01::tx_packet(uint8_t *tx_buf, uint8_t len)
     // Start transmission
     ce_high();
 
-    timeout = 30;
-    do
+    timeout = 0;
+    while (timeout++ < 100)
     {
         delayMicroseconds(100);
         status = spi_read_reg(REG_STATUS);
         if (status & MASK_MAX_RT)
         {
             flush_tx();
-            Serial.print(timeout); Serial.print("-"); Serial.print(_status); Serial.print("-"); Serial.println(status);
+            //Serial.print(timeout); Serial.print("-"); Serial.print(_status); Serial.print("-"); Serial.println(status);
             return STATUS_MAX_RT;
         }
         if (status & MASK_TX_DS)
         {
+            //Serial.print("consumed "); Serial.print(timeout*100); Serial.println("us");
             return STATUS_OK;
         }
-    } while (timeout--);
+    }
 
     return STATUS_TIMEOUT;
 }
@@ -439,10 +459,24 @@ ret:
 
 void Nrf24l01::dump_reg()
 {
+    uint8_t value, buf[5] = {0};
     for (uint8_t i = 0; i <= 0x1D; i++)
     {
-        uint8_t value = spi_read_reg(i);
         Serial.print(i, HEX); Serial.print(": ");
-        Serial.println(value, HEX);
+        if (i == 0xA || i == 0xB || i == 0x10)
+        {
+            spi_read_buffer(i, buf, 5);
+            for (uint8_t j = 0; j < 5; j++)
+            {
+                 Serial.print(buf[j], HEX);
+                 Serial.print(" ");
+            }
+            Serial.println("");
+        }
+        else
+        {
+            value = spi_read_reg(i);
+            Serial.println(value, HEX);
+        }
     }
 }

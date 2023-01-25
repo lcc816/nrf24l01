@@ -71,13 +71,6 @@
 #define AW_5BYTES       ((uint8_t)0x3)
 /* 04 - SETUP_RETR */
 #define MASK_ARD        ((uint8_t)0xF0)
-#define ARD_250US       ((uint8_t)0x00)
-#define ARD_500US       ((uint8_t)0x10)
-#define ARD_750US       ((uint8_t)0x20)
-#define ARD_1000US      ((uint8_t)0x30)
-#define ARD_1500US      ((uint8_t)0x50)
-#define ARD_2000US      ((uint8_t)0x70)
-#define ARD_4000US      ((uint8_t)0xF0)
 #define MASK_ARC        ((uint8_t)0x0F)
 /* 05 - RF_CH */
 #define MASK_RF_CH      ((uint8_t)0x7F)
@@ -179,8 +172,9 @@ public:
     void set_txrx_mode(rf24_mode_e mode);
     void set_channel(uint8_t ch);
     uint8_t get_channel();
-    void set_tx_addr(uint8_t *addr, uint8_t len);
-    void set_rx_addr(uint8_t pipe, uint8_t *addr, uint8_t len);
+    void set_retries(uint16_t delay, uint8_t count);
+    void set_tx_addr(const uint8_t *addr, uint8_t len);
+    void set_rx_addr(uint8_t pipe, const uint8_t *addr, uint8_t len);
     void set_payload_size(uint8_t size);
     uint8_t flush_tx();
     uint8_t flush_rx();
@@ -209,6 +203,8 @@ public:
     bool dynamic_length;
     /* The length of the payload can be from 0 to 32 bytes */
     uint8_t payload_len;
+    /* Auto Retransmit Delay */
+    uint16_t retry_delay;
     /* Auto Retransmit Count */
     uint8_t repeat_cnt;
     /* Data Rate */
@@ -228,7 +224,7 @@ private:
 
     void spi_write_reg(uint8_t addr, uint8_t data);
     uint8_t spi_read_reg(uint8_t addr);
-    void spi_write_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
+    void spi_write_buffer(uint8_t addr, const uint8_t *buffer, uint8_t bytes);
     void spi_read_buffer(uint8_t addr, uint8_t *buffer, uint8_t bytes);
     uint8_t _parse_data_rate_reg(rf24_datarate_e data_rate);
     uint8_t _parse_power_reg(rf24_power_e level, bool extension);
